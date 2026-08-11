@@ -51,13 +51,13 @@
   #syncStatus .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
   #syncStatus.offline .dot { background: var(--danger); }
 
-  .overview-item {
+  .nav-item {
     display: flex; align-items: center; gap: 6px;
     padding: 9px 10px; border-radius: var(--radius); cursor: pointer; font-size: 14px; font-weight: 700;
     margin-bottom: 4px;
   }
-  .overview-item:hover { background: var(--bg); }
-  .overview-item.active { background: var(--pin-soft); color: var(--pin); }
+  .nav-item:hover { background: var(--bg); }
+  .nav-item.active { background: var(--pin-soft); color: var(--pin); }
   #sidebarDivider { border: none; border-top: 1px solid var(--border); margin: 2px 0 6px; }
 
   #projectList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
@@ -87,21 +87,22 @@
   .btn.small { padding: 5px 10px; font-size: 12px; }
 
   /* ---------- Main ---------- */
-  #main { flex: 1; padding: 20px 24px 60px; max-width: 980px; margin: 0 auto; width: 100%; }
+  #main { flex: 1; padding: 20px 24px 60px; max-width: 1040px; margin: 0 auto; width: 100%; }
   #main.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; color: var(--text-muted); }
-  #projectHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
-  #projectHeader h2 { font-size: 20px; margin: 0; }
-  #projectMeta { color: var(--text-muted); font-size: 13px; margin: 4px 0 18px; }
-  #projectMeta .overdue-count { color: var(--danger); font-weight: 600; }
+  #pageHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  #pageHeader h2 { font-size: 20px; margin: 0; }
+  #pageMeta { color: var(--text-muted); font-size: 13px; margin: 4px 0 18px; }
+  #pageMeta .overdue-count { color: var(--danger); font-weight: 600; }
   #headerActions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  #entryForm {
+  #entryForm, #clientForm {
     background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 16px; margin-bottom: 20px; display: none; flex-direction: column; gap: 10px;
   }
-  #entryForm.open { display: flex; }
-  #entryForm label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; display: block; }
-  #entryForm textarea, #entryForm input, #entryForm select {
+  #entryForm.open, #clientForm.open { display: flex; }
+  #entryForm label, #clientForm label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; display: block; }
+  #entryForm textarea, #entryForm input, #entryForm select,
+  #clientForm textarea, #clientForm input, #clientForm select {
     width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; font-family: inherit;
   }
   #entryForm textarea { min-height: 56px; resize: vertical; }
@@ -129,8 +130,8 @@
   .section-title.pin { color: var(--pin); }
   .section-title.overdue-title { color: var(--danger); }
 
-  #entryList, #overdueList, #pinnedList, #restList { display: flex; flex-direction: column; gap: 10px; }
-  .entry-card { background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  #entryList, #overdueList, #pinnedList, #restList, #clientList { display: flex; flex-direction: column; gap: 10px; }
+  .entry-card, .client-card { background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .entry-card.done { opacity: 0.6; }
   .entry-card.overdue { border-left-color: var(--danger); }
   .entry-card.upcoming { border-left-color: var(--warn); }
@@ -150,7 +151,12 @@
   .entry-meta span b { color: var(--text); font-weight: 600; }
   .entry-meta span.overdue b { color: var(--danger); }
   .entry-meta span.upcoming b { color: var(--warn); }
-  .entry-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .entry-actions, .client-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+  .client-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .client-name { font-size: 15px; font-weight: 700; }
+  .client-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+  .client-meta b { color: var(--text); font-weight: 600; }
 
   .empty-state { color: var(--text-muted); font-size: 13.5px; text-align: center; padding: 40px 10px; }
   #globalError {
@@ -169,7 +175,7 @@
     #sidebar h1 { display: none; }
     #syncStatus { display: none; }
     #sidebarDivider { display: none; }
-    .overview-item { flex-shrink: 0; margin-bottom: 0; }
+    .nav-item { flex-shrink: 0; margin-bottom: 0; }
     #projectList { flex-direction: row; overflow-x: auto; flex: 1; padding-bottom: 2px; }
     .project-item { flex-shrink: 0; }
     #addProjectRow { margin-top: 0; padding-top: 0; border-top: none; flex-shrink: 0; }
@@ -185,7 +191,8 @@
   <div id="sidebar">
     <h1>📋 專案備忘錄</h1>
     <div id="syncStatus"><span class="dot"></span><span id="syncText">同步中…</span></div>
-    <div id="overviewItem" class="overview-item">📊 總覽</div>
+    <div id="overviewItem" class="nav-item">📊 總覽</div>
+    <div id="clientsItem" class="nav-item">👤 客戶資料庫</div>
     <hr id="sidebarDivider">
     <ul id="projectList"></ul>
     <div id="addProjectRow">
@@ -209,19 +216,22 @@
 
   let projects = [];
   let entries = [];
-  let activeView = "project"; // "project" | "overview"
+  let clients = [];
+  let activeView = "project"; // "project" | "overview" | "clients"
   let activeProjectId = null;
   let filterStatus = "all"; // all | pending | inprogress | done
   let filterName = "all";
-  let filterUnit = "all";
+  let filterAgency = "all";
+  let filterDept = "all";
   let searchQuery = "";
-  let sortBy = "deadline";  // deadline | created | name | unit
+  let sortBy = "deadline";  // deadline | created | name | agency | dept
   let editingEntryId = null;
+  let editingClientId = null;
   let loaded = false;
-  let formOpen = false; // true while the add/edit entry form is open, to avoid auto-refresh wiping unsaved input
+  let formOpen = false; // true while add/edit form (entry or client) is open, to avoid auto-refresh wiping unsaved input
 
   const STATUS_LABEL = { pending: "待處理", inprogress: "處理中", done: "已完成" };
-  const SORT_LABEL = { deadline: "Deadline", created: "建立時間", name: "姓名", unit: "單位" };
+  const SORT_LABEL = { deadline: "Deadline", created: "建立時間", name: "業主", agency: "機關", dept: "科室" };
 
   function pad(n) { return n.toString().padStart(2, "0"); }
   function todayStr() {
@@ -246,13 +256,13 @@
   function isUpcoming(entry) {
     if (!entry.deadline || entry.status === "done") return false;
     const today = todayStr();
-    if (entry.deadline < today) return false; // overdue, not upcoming
+    if (entry.deadline < today) return false;
     return entry.deadline <= addDays(today, UPCOMING_DAYS);
   }
   function getWeekRange() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const day = today.getDay(); // 0 = Sunday .. 6 = Saturday
+    const day = today.getDay();
     const start = new Date(today); start.setDate(today.getDate() - day);
     const end = new Date(start); end.setDate(start.getDate() + 6);
     const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -268,13 +278,25 @@
     return d.innerHTML;
   }
 
+  // ---- Client helpers ----
+  function getClient(id) { return clients.find(c => c.id === id) || null; }
+  function eName(e) { return e._client ? (e._client.name || "") : ""; }
+  function eAgency(e) { return e._client ? (e._client.agency || "") : ""; }
+  function eDept(e) { return e._client ? (e._client.department || "") : ""; }
+  function eLineId(e) { return e._client ? (e._client.line_id || "") : ""; }
+  function eEmail(e) { return e._client ? (e._client.email || "") : ""; }
+  function ePhone(e) { return e._client ? (e._client.phone || "") : ""; }
+  function attachClients() {
+    entries.forEach(e => { e._client = getClient(e.client_id); });
+  }
+
   function sortEntries(list, by) {
     const arr = [...list];
     arr.sort((a, b) => {
-      if (by === "name") return cmpText(a.name, b.name);
-      if (by === "unit") return cmpText(a.unit, b.unit);
+      if (by === "name") return cmpText(eName(a), eName(b));
+      if (by === "agency") return cmpText(eAgency(a), eAgency(b));
+      if (by === "dept") return cmpText(eDept(a), eDept(b));
       if (by === "created") return new Date(a.created_at) - new Date(b.created_at);
-      // deadline (default)
       if (!a.deadline && !b.deadline) return 0;
       if (!a.deadline) return 1;
       if (!b.deadline) return -1;
@@ -289,22 +311,26 @@
     if (!bv) return -1;
     return av.localeCompare(bv, "zh-Hant");
   }
-  function distinctValues(list, field) {
+  function distinctValues(list, getter) {
     const set = new Set();
-    list.forEach(e => { if (e[field] && e[field].trim()) set.add(e[field].trim()); });
+    list.forEach(e => { const v = getter(e); if (v && v.trim()) set.add(v.trim()); });
     return [...set].sort((a, b) => a.localeCompare(b, "zh-Hant"));
   }
   function applyFilters(list) {
     let out = list;
     if (filterStatus !== "all") out = out.filter(e => e.status === filterStatus);
-    if (filterName !== "all") out = out.filter(e => (e.name || "").trim() === filterName);
-    if (filterUnit !== "all") out = out.filter(e => (e.unit || "").trim() === filterUnit);
+    if (filterName !== "all") out = out.filter(e => eName(e).trim() === filterName);
+    if (filterAgency !== "all") out = out.filter(e => eAgency(e).trim() === filterAgency);
+    if (filterDept !== "all") out = out.filter(e => eDept(e).trim() === filterDept);
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       out = out.filter(e =>
         (e.content || "").toLowerCase().includes(q) ||
-        (e.name || "").toLowerCase().includes(q) ||
-        (e.unit || "").toLowerCase().includes(q)
+        eName(e).toLowerCase().includes(q) ||
+        eAgency(e).toLowerCase().includes(q) ||
+        eDept(e).toLowerCase().includes(q) ||
+        eEmail(e).toLowerCase().includes(q) ||
+        ePhone(e).toLowerCase().includes(q)
       );
     }
     return out;
@@ -318,14 +344,15 @@
   }
   function toCSV(list, withProject) {
     const headers = withProject
-      ? ["專案", "內容", "姓名", "單位", "LINE ID", "登錄日期", "Deadline", "狀態"]
-      : ["內容", "姓名", "單位", "LINE ID", "登錄日期", "Deadline", "狀態"];
+      ? ["專案", "內容", "業主", "機關", "科室", "LINE ID", "Email", "電話", "登錄日期", "Deadline", "狀態"]
+      : ["內容", "業主", "機關", "科室", "LINE ID", "Email", "電話", "登錄日期", "Deadline", "狀態"];
     const lines = [headers.join(",")];
     list.forEach(e => {
       const row = [];
       if (withProject) row.push(csvEscape(projectName(e.project_id)));
       row.push(
-        csvEscape(e.content), csvEscape(e.name), csvEscape(e.unit), csvEscape(e.line_id),
+        csvEscape(e.content), csvEscape(eName(e)), csvEscape(eAgency(e)), csvEscape(eDept(e)),
+        csvEscape(eLineId(e)), csvEscape(eEmail(e)), csvEscape(ePhone(e)),
         csvEscape(e.log_date), csvEscape(e.deadline), csvEscape(STATUS_LABEL[e.status] || e.status)
       );
       lines.push(row.join(","));
@@ -359,14 +386,18 @@
   // ---- Data loading ----
   async function loadAll() {
     try {
-      const [{ data: pData, error: pErr }, { data: eData, error: eErr }] = await Promise.all([
+      const [{ data: pData, error: pErr }, { data: eData, error: eErr }, { data: cData, error: cErr }] = await Promise.all([
         sb.from("projects").select("*").order("created_at", { ascending: true }),
         sb.from("entries").select("*").order("created_at", { ascending: true }),
+        sb.from("clients").select("*").order("created_at", { ascending: true }),
       ]);
       if (pErr) throw pErr;
       if (eErr) throw eErr;
+      if (cErr) throw cErr;
       projects = pData || [];
       entries = eData || [];
+      clients = cData || [];
+      attachClients();
       loaded = true;
       setSyncStatus("online", "已同步");
       clearError();
@@ -388,12 +419,13 @@
     }
   }
   function resetFilters() {
-    filterStatus = "all"; filterName = "all"; filterUnit = "all"; searchQuery = "";
+    filterStatus = "all"; filterName = "all"; filterAgency = "all"; filterDept = "all"; searchQuery = "";
   }
 
   // ---- Rendering ----
   function renderSidebar() {
-    document.getElementById("overviewItem").className = "overview-item" + (activeView === "overview" ? " active" : "");
+    document.getElementById("overviewItem").className = "nav-item" + (activeView === "overview" ? " active" : "");
+    document.getElementById("clientsItem").className = "nav-item" + (activeView === "clients" ? " active" : "");
     const list = document.getElementById("projectList");
     list.innerHTML = "";
     projects.forEach(p => {
@@ -416,8 +448,9 @@
   }
 
   function toolbarHtml(scopeList) {
-    const names = distinctValues(scopeList, "name");
-    const units = distinctValues(scopeList, "unit");
+    const names = distinctValues(scopeList, eName);
+    const agencies = distinctValues(scopeList, eAgency);
+    const depts = distinctValues(scopeList, eDept);
     return `
       <div id="toolBar">
         <div id="filterBar">
@@ -426,23 +459,29 @@
               ${s === "all" ? "全部" : STATUS_LABEL[s]}
             </div>`).join("")}
         </div>
-        <input type="text" id="searchInput" placeholder="搜尋內容／姓名／單位…">
+        <input type="text" id="searchInput" placeholder="搜尋內容／業主／機關／科室…">
         <div id="advFilterRow">
           <div class="field">排序：
             <select id="sortSelect">
               ${Object.keys(SORT_LABEL).map(k => `<option value="${k}">${SORT_LABEL[k]}</option>`).join("")}
             </select>
           </div>
-          <div class="field">姓名：
+          <div class="field">業主：
             <select id="nameFilterSelect">
               <option value="all">全部</option>
               ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
             </select>
           </div>
-          <div class="field">單位：
-            <select id="unitFilterSelect">
+          <div class="field">機關：
+            <select id="agencyFilterSelect">
               <option value="all">全部</option>
-              ${units.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join("")}
+              ${agencies.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">科室：
+            <select id="deptFilterSelect">
+              <option value="all">全部</option>
+              ${depts.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join("")}
             </select>
           </div>
         </div>
@@ -472,10 +511,14 @@
     const nameSel = document.getElementById("nameFilterSelect");
     nameSel.value = filterName;
     nameSel.addEventListener("change", (e) => { filterName = e.target.value; render(); });
-    const unitSel = document.getElementById("unitFilterSelect");
-    unitSel.value = filterUnit;
-    unitSel.addEventListener("change", (e) => { filterUnit = e.target.value; render(); });
+    const agencySel = document.getElementById("agencyFilterSelect");
+    agencySel.value = filterAgency;
+    agencySel.addEventListener("change", (e) => { filterAgency = e.target.value; render(); });
+    const deptSel = document.getElementById("deptFilterSelect");
+    deptSel.value = filterDept;
+    deptSel.addEventListener("change", (e) => { filterDept = e.target.value; render(); });
   }
+
   function entryFormHtml() {
     return `
       <form id="entryForm">
@@ -485,19 +528,12 @@
         </div>
         <div class="form-row">
           <div>
-            <label>姓名</label>
-            <input type="text" id="fName" placeholder="負責人姓名">
+            <label>業主</label>
+            <select id="fClient">
+              <option value="">－ 未指定 －</option>
+              ${clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}${clientTagLabel(c) ? "（" + escapeHtml(clientTagLabel(c)) + "）" : ""}</option>`).join("")}
+            </select>
           </div>
-          <div>
-            <label>單位</label>
-            <input type="text" id="fUnit" placeholder="所屬單位">
-          </div>
-          <div>
-            <label>LINE ID</label>
-            <input type="text" id="fLineId" placeholder="LINE ID">
-          </div>
-        </div>
-        <div class="form-row">
           <div>
             <label>登錄日期</label>
             <input type="date" id="fLogDate">
@@ -522,6 +558,9 @@
       </form>
     `;
   }
+  function clientTagLabel(c) {
+    return [c.agency, c.department].filter(Boolean).join(" ");
+  }
   function bindEntryForm() {
     document.getElementById("toggleFormBtn")?.addEventListener("click", () => openForm());
     document.getElementById("cancelFormBtn").addEventListener("click", closeForm);
@@ -537,10 +576,8 @@
       return;
     }
 
-    if (activeView === "overview") {
-      renderOverview(main);
-      return;
-    }
+    if (activeView === "overview") { renderOverview(main); return; }
+    if (activeView === "clients") { renderClients(main); return; }
 
     if (!projects.length) {
       main.className = "empty";
@@ -560,7 +597,7 @@
 
     main.innerHTML = `
       <div id="globalErrorHost"></div>
-      <div id="projectHeader">
+      <div id="pageHeader">
         <h2>${escapeHtml(project.name)}</h2>
         <div id="headerActions">
           <button class="btn secondary small" id="exportBtn">匯出 CSV</button>
@@ -569,7 +606,7 @@
           <button class="btn danger small" id="deleteProjectBtn">刪除專案</button>
         </div>
       </div>
-      <div id="projectMeta">共 ${total} 筆記錄・${pending} 筆待處理${overdue ? `・<span class="overdue-count">${overdue} 筆已逾期</span>` : ""}</div>
+      <div id="pageMeta">共 ${total} 筆記錄・${pending} 筆待處理${overdue ? `・<span class="overdue-count">${overdue} 筆已逾期</span>` : ""}</div>
 
       <button class="btn" id="toggleFormBtn" style="margin-bottom:14px;">＋ 新增記錄</button>
 
@@ -614,14 +651,14 @@
 
     main.innerHTML = `
       <div id="globalErrorHost"></div>
-      <div id="projectHeader">
+      <div id="pageHeader">
         <h2>📊 總覽</h2>
         <div id="headerActions">
           <button class="btn secondary small" id="exportBtn">匯出 CSV</button>
           <button class="btn secondary small" id="refreshBtn">重新整理</button>
         </div>
       </div>
-      <div id="projectMeta">共 ${all.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）${totalOverdue ? `・<span class="overdue-count">${totalOverdue} 筆已逾期</span>` : ""}</div>
+      <div id="pageMeta">共 ${all.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）${totalOverdue ? `・<span class="overdue-count">${totalOverdue} 筆已逾期</span>` : ""}</div>
 
       ${toolbarHtml(all)}
 
@@ -679,9 +716,12 @@
         </select>
       </div>
       <div class="entry-meta">
-        <span>姓名：<b>${e.name ? escapeHtml(e.name) : "—"}</b></span>
-        <span>單位：<b>${e.unit ? escapeHtml(e.unit) : "—"}</b></span>
-        <span>LINE ID：<b>${e.line_id ? escapeHtml(e.line_id) : "—"}</b></span>
+        <span>業主：<b>${e._client ? escapeHtml(e._client.name) : "—"}</b></span>
+        <span>機關：<b>${eAgency(e) ? escapeHtml(eAgency(e)) : "—"}</b></span>
+        <span>科室：<b>${eDept(e) ? escapeHtml(eDept(e)) : "—"}</b></span>
+        <span>LINE ID：<b>${eLineId(e) ? escapeHtml(eLineId(e)) : "—"}</b></span>
+        <span>Email：<b>${eEmail(e) ? escapeHtml(eEmail(e)) : "—"}</b></span>
+        <span>電話：<b>${ePhone(e) ? escapeHtml(ePhone(e)) : "—"}</b></span>
         <span>登錄日期：<b>${formatDate(e.log_date)}</b></span>
         <span class="${deadlineClass}">Deadline：<b>${formatDate(e.deadline)}${deadlineSuffix}</b></span>
       </div>
@@ -725,9 +765,7 @@
     if (entry) {
       editingEntryId = entry.id;
       document.getElementById("fContent").value = entry.content;
-      document.getElementById("fName").value = entry.name || "";
-      document.getElementById("fUnit").value = entry.unit || "";
-      document.getElementById("fLineId").value = entry.line_id || "";
+      document.getElementById("fClient").value = entry.client_id || "";
       document.getElementById("fLogDate").value = entry.log_date || todayStr();
       document.getElementById("fDeadline").value = entry.deadline || "";
       document.getElementById("fStatus").value = entry.status;
@@ -756,11 +794,10 @@
     const submitBtn = document.getElementById("submitFormBtn");
     submitBtn.disabled = true;
 
+    const clientVal = document.getElementById("fClient").value;
     const payload = {
       content,
-      name: document.getElementById("fName").value.trim() || null,
-      unit: document.getElementById("fUnit").value.trim() || null,
-      line_id: document.getElementById("fLineId").value.trim() || null,
+      client_id: clientVal || null,
       log_date: document.getElementById("fLogDate").value || todayStr(),
       deadline: document.getElementById("fDeadline").value || null,
       status: document.getElementById("fStatus").value,
@@ -810,10 +847,177 @@
     }
   }
 
+  // ---- Clients view ----
+  function renderClients(main) {
+    main.innerHTML = `
+      <div id="globalErrorHost"></div>
+      <div id="pageHeader">
+        <h2>👤 客戶資料庫</h2>
+        <div id="headerActions">
+          <button class="btn secondary small" id="refreshBtn">重新整理</button>
+        </div>
+      </div>
+      <div id="pageMeta">共 ${clients.length} 位客戶</div>
+
+      <button class="btn" id="toggleClientFormBtn" style="margin-bottom:14px;">＋ 新增客戶</button>
+
+      <form id="clientForm">
+        <div class="form-row">
+          <div>
+            <label>業主姓名</label>
+            <input type="text" id="cName" placeholder="業主姓名" required>
+          </div>
+          <div>
+            <label>機關</label>
+            <input type="text" id="cAgency" placeholder="機關">
+          </div>
+          <div>
+            <label>科室</label>
+            <input type="text" id="cDept" placeholder="科室">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>LINE ID</label>
+            <input type="text" id="cLineId" placeholder="LINE ID">
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" id="cEmail" placeholder="Email">
+          </div>
+          <div>
+            <label>電話</label>
+            <input type="text" id="cPhone" placeholder="電話">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn secondary small" id="cancelClientFormBtn">取消</button>
+          <button type="submit" class="btn small" id="submitClientFormBtn">儲存</button>
+        </div>
+      </form>
+
+      <div id="clientList"></div>
+    `;
+
+    document.getElementById("refreshBtn").addEventListener("click", loadAll);
+    document.getElementById("toggleClientFormBtn").addEventListener("click", () => openClientForm());
+    document.getElementById("cancelClientFormBtn").addEventListener("click", closeClientForm);
+    document.getElementById("clientForm").addEventListener("submit", onSubmitClient);
+
+    const list = document.getElementById("clientList");
+    if (!clients.length) {
+      list.innerHTML = `<div class="empty-state">還沒有客戶資料，點上方「＋ 新增客戶」建立第一筆</div>`;
+      return;
+    }
+    const sorted = [...clients].sort((a, b) => cmpText(a.name, b.name));
+    sorted.forEach(c => list.appendChild(renderClientCard(c)));
+  }
+
+  function renderClientCard(c) {
+    const card = document.createElement("div");
+    card.className = "client-card";
+    const usedCount = entries.filter(e => e.client_id === c.id).length;
+    card.innerHTML = `
+      <div class="client-top">
+        <div class="client-name">${escapeHtml(c.name)}</div>
+      </div>
+      <div class="client-meta">
+        <span>機關：<b>${c.agency ? escapeHtml(c.agency) : "—"}</b></span>
+        <span>科室：<b>${c.department ? escapeHtml(c.department) : "—"}</b></span>
+        <span>LINE ID：<b>${c.line_id ? escapeHtml(c.line_id) : "—"}</b></span>
+        <span>Email：<b>${c.email ? escapeHtml(c.email) : "—"}</b></span>
+        <span>電話：<b>${c.phone ? escapeHtml(c.phone) : "—"}</b></span>
+        <span>目前追蹤中：<b>${usedCount} 筆</b></span>
+      </div>
+      <div class="client-actions">
+        <button class="btn secondary small" data-action="edit">編輯</button>
+        <button class="btn danger small" data-action="delete">刪除</button>
+      </div>
+    `;
+    card.querySelector('[data-action="edit"]').addEventListener("click", () => openClientForm(c));
+    card.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+      const warn = usedCount ? `目前有 ${usedCount} 筆記錄使用這位客戶，刪除後那些記錄的業主欄位會變成未指定。確定要刪除「${c.name}」嗎？` : `確定要刪除「${c.name}」嗎？`;
+      if (!confirm(warn)) return;
+      try {
+        const { error } = await sb.from("clients").delete().eq("id", c.id);
+        if (error) throw error;
+        await loadAll();
+      } catch (err) {
+        showError("刪除客戶失敗：" + (err.message || err));
+      }
+    });
+    return card;
+  }
+
+  function openClientForm(client) {
+    formOpen = true;
+    const form = document.getElementById("clientForm");
+    form.classList.add("open");
+    document.getElementById("toggleClientFormBtn").style.display = "none";
+    if (client) {
+      editingClientId = client.id;
+      document.getElementById("cName").value = client.name;
+      document.getElementById("cAgency").value = client.agency || "";
+      document.getElementById("cDept").value = client.department || "";
+      document.getElementById("cLineId").value = client.line_id || "";
+      document.getElementById("cEmail").value = client.email || "";
+      document.getElementById("cPhone").value = client.phone || "";
+      document.getElementById("submitClientFormBtn").textContent = "更新";
+    } else {
+      editingClientId = null;
+      document.getElementById("submitClientFormBtn").textContent = "儲存";
+    }
+    document.getElementById("cName").focus();
+  }
+  function closeClientForm() {
+    formOpen = false;
+    const form = document.getElementById("clientForm");
+    if (!form) return;
+    form.classList.remove("open");
+    const toggleBtn = document.getElementById("toggleClientFormBtn");
+    if (toggleBtn) toggleBtn.style.display = "inline-block";
+    editingClientId = null;
+  }
+  async function onSubmitClient(ev) {
+    ev.preventDefault();
+    const name = document.getElementById("cName").value.trim();
+    if (!name) return;
+    const submitBtn = document.getElementById("submitClientFormBtn");
+    submitBtn.disabled = true;
+    const payload = {
+      name,
+      agency: document.getElementById("cAgency").value.trim() || null,
+      department: document.getElementById("cDept").value.trim() || null,
+      line_id: document.getElementById("cLineId").value.trim() || null,
+      email: document.getElementById("cEmail").value.trim() || null,
+      phone: document.getElementById("cPhone").value.trim() || null,
+    };
+    try {
+      if (editingClientId) {
+        const { error } = await sb.from("clients").update(payload).eq("id", editingClientId);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from("clients").insert(payload);
+        if (error) throw error;
+      }
+      closeClientForm();
+      await loadAll();
+    } catch (err) {
+      showError("儲存客戶失敗：" + (err.message || err));
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
   document.getElementById("overviewItem").addEventListener("click", () => {
     activeView = "overview";
     editingEntryId = null;
     resetFilters();
+    render();
+  });
+  document.getElementById("clientsItem").addEventListener("click", () => {
+    activeView = "clients";
+    editingClientId = null;
     render();
   });
   document.getElementById("addProjectBtn").addEventListener("click", addProject);
