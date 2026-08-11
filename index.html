@@ -87,12 +87,13 @@
   .btn.small { padding: 5px 10px; font-size: 12px; }
 
   /* ---------- Main ---------- */
-  #main { flex: 1; padding: 20px 24px 60px; max-width: 960px; margin: 0 auto; width: 100%; }
+  #main { flex: 1; padding: 20px 24px 60px; max-width: 980px; margin: 0 auto; width: 100%; }
   #main.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; color: var(--text-muted); }
   #projectHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
   #projectHeader h2 { font-size: 20px; margin: 0; }
   #projectMeta { color: var(--text-muted); font-size: 13px; margin: 4px 0 18px; }
-  #headerActions { display: flex; gap: 8px; }
+  #projectMeta .overdue-count { color: var(--danger); font-weight: 600; }
+  #headerActions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   #entryForm {
     background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
@@ -108,24 +109,31 @@
   .form-row > div { flex: 1; min-width: 140px; }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-  #toolBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  #toolBar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
   #filterBar { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip {
     padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
     font-size: 12.5px; cursor: pointer; color: var(--text-muted);
   }
   .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  #sortRow { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
-  #sortSelect { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px; background: var(--panel); }
+  #searchInput {
+    width: 100%; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border);
+    font-size: 13.5px; font-family: inherit; background: var(--panel);
+  }
+  #advFilterRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-muted); }
+  #advFilterRow select { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px; background: var(--panel); }
+  #advFilterRow .field { display: flex; align-items: center; gap: 6px; }
 
   .section-title { font-size: 13.5px; font-weight: 700; margin: 22px 0 10px; display: flex; align-items: center; gap: 6px; }
   .section-title:first-child { margin-top: 0; }
   .section-title.pin { color: var(--pin); }
+  .section-title.overdue-title { color: var(--danger); }
 
-  #entryList, #pinnedList, #restList { display: flex; flex-direction: column; gap: 10px; }
-  .entry-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  #entryList, #overdueList, #pinnedList, #restList { display: flex; flex-direction: column; gap: 10px; }
+  .entry-card { background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .entry-card.done { opacity: 0.6; }
-  .entry-card.pinned { border-color: var(--pin); box-shadow: 0 0 0 1px var(--pin) inset; }
+  .entry-card.overdue { border-left-color: var(--danger); }
+  .entry-card.upcoming { border-left-color: var(--warn); }
   .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .entry-content { font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; flex: 1; }
   .status-select { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
@@ -141,6 +149,7 @@
   .entry-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--text-muted); }
   .entry-meta span b { color: var(--text); font-weight: 600; }
   .entry-meta span.overdue b { color: var(--danger); }
+  .entry-meta span.upcoming b { color: var(--warn); }
   .entry-actions { display: flex; gap: 6px; margin-top: 10px; }
 
   .empty-state { color: var(--text-muted); font-size: 13.5px; text-align: center; padding: 40px 10px; }
@@ -167,7 +176,6 @@
     #newProjectInput { width: 90px; }
     #main { padding: 16px 14px 40px; }
     .form-row > div { min-width: 100%; }
-    #toolBar { flex-direction: column; align-items: stretch; }
   }
 </style>
 </head>
@@ -197,12 +205,16 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const POLL_MS = 15000; // auto refresh interval
+  const UPCOMING_DAYS = 3;
 
   let projects = [];
   let entries = [];
   let activeView = "project"; // "project" | "overview"
   let activeProjectId = null;
   let filterStatus = "all"; // all | pending | inprogress | done
+  let filterName = "all";
+  let filterUnit = "all";
+  let searchQuery = "";
   let sortBy = "deadline";  // deadline | created | name | unit
   let editingEntryId = null;
   let loaded = false;
@@ -216,6 +228,11 @@
     const d = new Date();
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
   function formatDate(dateStr) {
     if (!dateStr) return "—";
     const [y, m, d] = dateStr.split("-");
@@ -225,6 +242,12 @@
   function isOverdue(entry) {
     if (!entry.deadline || entry.status === "done") return false;
     return entry.deadline < todayStr();
+  }
+  function isUpcoming(entry) {
+    if (!entry.deadline || entry.status === "done") return false;
+    const today = todayStr();
+    if (entry.deadline < today) return false; // overdue, not upcoming
+    return entry.deadline <= addDays(today, UPCOMING_DAYS);
   }
   function getWeekRange() {
     const now = new Date();
@@ -266,6 +289,57 @@
     if (!bv) return -1;
     return av.localeCompare(bv, "zh-Hant");
   }
+  function distinctValues(list, field) {
+    const set = new Set();
+    list.forEach(e => { if (e[field] && e[field].trim()) set.add(e[field].trim()); });
+    return [...set].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+  }
+  function applyFilters(list) {
+    let out = list;
+    if (filterStatus !== "all") out = out.filter(e => e.status === filterStatus);
+    if (filterName !== "all") out = out.filter(e => (e.name || "").trim() === filterName);
+    if (filterUnit !== "all") out = out.filter(e => (e.unit || "").trim() === filterUnit);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      out = out.filter(e =>
+        (e.content || "").toLowerCase().includes(q) ||
+        (e.name || "").toLowerCase().includes(q) ||
+        (e.unit || "").toLowerCase().includes(q)
+      );
+    }
+    return out;
+  }
+
+  function csvEscape(v) {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function toCSV(list, withProject) {
+    const headers = withProject
+      ? ["專案", "內容", "姓名", "單位", "LINE ID", "登錄日期", "Deadline", "狀態"]
+      : ["內容", "姓名", "單位", "LINE ID", "登錄日期", "Deadline", "狀態"];
+    const lines = [headers.join(",")];
+    list.forEach(e => {
+      const row = [];
+      if (withProject) row.push(csvEscape(projectName(e.project_id)));
+      row.push(
+        csvEscape(e.content), csvEscape(e.name), csvEscape(e.unit), csvEscape(e.line_id),
+        csvEscape(e.log_date), csvEscape(e.deadline), csvEscape(STATUS_LABEL[e.status] || e.status)
+      );
+      lines.push(row.join(","));
+    });
+    return lines.join("\r\n");
+  }
+  function downloadCSV(csvStr, filename) {
+    const blob = new Blob(["﻿" + csvStr], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   function setSyncStatus(state, text) {
     const el = document.getElementById("syncStatus");
@@ -306,11 +380,15 @@
 
   function projectEntries(pid) { return entries.filter(e => e.project_id === pid); }
   function pendingCount(pid) { return projectEntries(pid).filter(e => e.status !== "done").length; }
+  function overdueCount(list) { return list.filter(isOverdue).length; }
   function projectName(pid) { const p = projects.find(p => p.id === pid); return p ? p.name : "（已刪除的專案）"; }
   function ensureActiveProject() {
     if (!projects.find(p => p.id === activeProjectId)) {
       activeProjectId = projects.length ? projects[0].id : null;
     }
+  }
+  function resetFilters() {
+    filterStatus = "all"; filterName = "all"; filterUnit = "all"; searchQuery = "";
   }
 
   // ---- Rendering ----
@@ -330,40 +408,74 @@
         activeView = "project";
         activeProjectId = p.id;
         editingEntryId = null;
-        filterStatus = "all";
+        resetFilters();
         render();
       });
       list.appendChild(li);
     });
   }
 
-  function sortToolbarHtml() {
+  function toolbarHtml(scopeList) {
+    const names = distinctValues(scopeList, "name");
+    const units = distinctValues(scopeList, "unit");
     return `
-      <div id="sortRow">
-        排序：
-        <select id="sortSelect">
-          ${Object.keys(SORT_LABEL).map(k => `<option value="${k}" ${sortBy === k ? "selected" : ""}>${SORT_LABEL[k]}</option>`).join("")}
-        </select>
-      </div>
-    `;
-  }
-  function filterBarHtml() {
-    return `
-      <div id="filterBar">
-        ${["all", "pending", "inprogress", "done"].map(s => `
-          <div class="chip ${filterStatus === s ? "active" : ""}" data-status="${s}">
-            ${s === "all" ? "全部" : STATUS_LABEL[s]}
-          </div>`).join("")}
+      <div id="toolBar">
+        <div id="filterBar">
+          ${["all", "pending", "inprogress", "done"].map(s => `
+            <div class="chip" data-status="${s}">
+              ${s === "all" ? "全部" : STATUS_LABEL[s]}
+            </div>`).join("")}
+        </div>
+        <input type="text" id="searchInput" placeholder="搜尋內容／姓名／單位…">
+        <div id="advFilterRow">
+          <div class="field">排序：
+            <select id="sortSelect">
+              ${Object.keys(SORT_LABEL).map(k => `<option value="${k}">${SORT_LABEL[k]}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">姓名：
+            <select id="nameFilterSelect">
+              <option value="all">全部</option>
+              ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">單位：
+            <select id="unitFilterSelect">
+              <option value="all">全部</option>
+              ${units.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
       </div>
     `;
   }
   function bindToolbar() {
-    document.getElementById("sortSelect").addEventListener("change", (e) => { sortBy = e.target.value; render(); });
     document.querySelectorAll(".chip").forEach(chip => {
+      if (chip.dataset.status === filterStatus) chip.classList.add("active");
       chip.addEventListener("click", () => { filterStatus = chip.dataset.status; render(); });
     });
+    const search = document.getElementById("searchInput");
+    search.value = searchQuery;
+    search.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      const cursorPos = e.target.selectionStart;
+      render();
+      const freshSearch = document.getElementById("searchInput");
+      if (freshSearch) {
+        freshSearch.focus();
+        freshSearch.setSelectionRange(cursorPos, cursorPos);
+      }
+    });
+    const sortSel = document.getElementById("sortSelect");
+    sortSel.value = sortBy;
+    sortSel.addEventListener("change", (e) => { sortBy = e.target.value; render(); });
+    const nameSel = document.getElementById("nameFilterSelect");
+    nameSel.value = filterName;
+    nameSel.addEventListener("change", (e) => { filterName = e.target.value; render(); });
+    const unitSel = document.getElementById("unitFilterSelect");
+    unitSel.value = filterUnit;
+    unitSel.addEventListener("change", (e) => { filterUnit = e.target.value; render(); });
   }
-
   function entryFormHtml() {
     return `
       <form id="entryForm">
@@ -438,33 +550,39 @@
 
     ensureActiveProject();
     const project = projects.find(p => p.id === activeProjectId);
-    const filtered = projectEntries(project.id).filter(e => filterStatus === "all" || e.status === filterStatus);
+    const all = projectEntries(project.id);
+    const filtered = applyFilters(all);
     const sorted = sortEntries(filtered, sortBy);
 
-    const total = projectEntries(project.id).length;
+    const total = all.length;
     const pending = pendingCount(project.id);
+    const overdue = overdueCount(all);
 
     main.innerHTML = `
       <div id="globalErrorHost"></div>
       <div id="projectHeader">
         <h2>${escapeHtml(project.name)}</h2>
         <div id="headerActions">
+          <button class="btn secondary small" id="exportBtn">匯出 CSV</button>
           <button class="btn secondary small" id="refreshBtn">重新整理</button>
           <button class="btn secondary small" id="renameProjectBtn">重新命名</button>
           <button class="btn danger small" id="deleteProjectBtn">刪除專案</button>
         </div>
       </div>
-      <div id="projectMeta">共 ${total} 筆記錄・${pending} 筆待處理</div>
+      <div id="projectMeta">共 ${total} 筆記錄・${pending} 筆待處理${overdue ? `・<span class="overdue-count">${overdue} 筆已逾期</span>` : ""}</div>
 
       <button class="btn" id="toggleFormBtn" style="margin-bottom:14px;">＋ 新增記錄</button>
 
       ${entryFormHtml()}
 
-      <div id="toolBar">${filterBarHtml()}${sortToolbarHtml()}</div>
+      ${toolbarHtml(all)}
 
       <div id="entryList"></div>
     `;
 
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      downloadCSV(toCSV(sorted, false), `${project.name}_備忘錄.csv`);
+    });
     document.getElementById("refreshBtn").addEventListener("click", loadAll);
     document.getElementById("renameProjectBtn").addEventListener("click", () => renameProject(project));
     document.getElementById("deleteProjectBtn").addEventListener("click", () => deleteProject(project));
@@ -475,30 +593,42 @@
     if (!sorted.length) {
       entryList.innerHTML = `<div class="empty-state">這個篩選條件下沒有記錄</div>`;
     } else {
-      sorted.forEach(e => entryList.appendChild(renderEntryCard(e, false)));
+      sorted.forEach(e => entryList.appendChild(renderEntryCard(e)));
     }
   }
 
   function renderOverview(main) {
     const { startStr, endStr } = getWeekRange();
-    const filtered = entries.filter(e => filterStatus === "all" || e.status === filterStatus);
-    const pinned = sortEntries(filtered.filter(e => isInWeek(e.deadline, startStr, endStr)), "deadline");
-    const pinnedIds = new Set(pinned.map(e => e.id));
-    const rest = sortEntries(filtered.filter(e => !pinnedIds.has(e.id)), sortBy);
+    const all = entries;
+    const filtered = applyFilters(all);
 
-    const totalPending = entries.filter(e => e.status !== "done").length;
+    const overdueList = sortEntries(filtered.filter(isOverdue), "deadline");
+    const overdueIds = new Set(overdueList.map(e => e.id));
+    const pinned = sortEntries(filtered.filter(e => !overdueIds.has(e.id) && isInWeek(e.deadline, startStr, endStr)), "deadline");
+    const pinnedIds = new Set(pinned.map(e => e.id));
+    const rest = sortEntries(filtered.filter(e => !overdueIds.has(e.id) && !pinnedIds.has(e.id)), sortBy);
+    const combinedForExport = [...overdueList, ...pinned, ...rest];
+
+    const totalPending = all.filter(e => e.status !== "done").length;
+    const totalOverdue = overdueCount(all);
 
     main.innerHTML = `
       <div id="globalErrorHost"></div>
       <div id="projectHeader">
         <h2>📊 總覽</h2>
         <div id="headerActions">
+          <button class="btn secondary small" id="exportBtn">匯出 CSV</button>
           <button class="btn secondary small" id="refreshBtn">重新整理</button>
         </div>
       </div>
-      <div id="projectMeta">共 ${entries.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）</div>
+      <div id="projectMeta">共 ${all.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）${totalOverdue ? `・<span class="overdue-count">${totalOverdue} 筆已逾期</span>` : ""}</div>
 
-      <div id="toolBar">${filterBarHtml()}${sortToolbarHtml()}</div>
+      ${toolbarHtml(all)}
+
+      ${overdueList.length ? `
+        <div class="section-title overdue-title">⚠️ 已逾期</div>
+        <div id="overdueList"></div>
+      ` : ""}
 
       <div class="section-title pin">📌 本週待辦（${formatDate(startStr)} - ${formatDate(endStr)}）</div>
       <div id="pinnedList"></div>
@@ -507,27 +637,37 @@
       <div id="restList"></div>
     `;
 
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      downloadCSV(toCSV(combinedForExport, true), `專案備忘錄_總覽.csv`);
+    });
     document.getElementById("refreshBtn").addEventListener("click", loadAll);
     bindToolbar();
 
+    if (overdueList.length) {
+      const overdueEl = document.getElementById("overdueList");
+      overdueList.forEach(e => overdueEl.appendChild(renderEntryCard(e)));
+    }
     const pinnedList = document.getElementById("pinnedList");
     if (!pinned.length) {
       pinnedList.innerHTML = `<div class="empty-state">本週沒有到期的工作</div>`;
     } else {
-      pinned.forEach(e => pinnedList.appendChild(renderEntryCard(e, true)));
+      pinned.forEach(e => pinnedList.appendChild(renderEntryCard(e)));
     }
     const restList = document.getElementById("restList");
     if (!rest.length) {
       restList.innerHTML = `<div class="empty-state">沒有其他記錄</div>`;
     } else {
-      rest.forEach(e => restList.appendChild(renderEntryCard(e, false)));
+      rest.forEach(e => restList.appendChild(renderEntryCard(e)));
     }
   }
 
-  function renderEntryCard(e, pinnedStyle) {
+  function renderEntryCard(e) {
     const card = document.createElement("div");
-    card.className = "entry-card" + (e.status === "done" ? " done" : "") + (pinnedStyle ? " pinned" : "");
     const overdue = isOverdue(e);
+    const upcoming = !overdue && isUpcoming(e);
+    card.className = "entry-card" + (e.status === "done" ? " done" : "") + (overdue ? " overdue" : "") + (upcoming ? " upcoming" : "");
+    const deadlineClass = overdue ? "overdue" : upcoming ? "upcoming" : "";
+    const deadlineSuffix = overdue ? "（已逾期）" : upcoming ? "（即將到期）" : "";
     card.innerHTML = `
       ${activeView === "overview" ? `<div class="project-tag">${escapeHtml(projectName(e.project_id))}</div>` : ""}
       <div class="entry-top">
@@ -543,7 +683,7 @@
         <span>單位：<b>${e.unit ? escapeHtml(e.unit) : "—"}</b></span>
         <span>LINE ID：<b>${e.line_id ? escapeHtml(e.line_id) : "—"}</b></span>
         <span>登錄日期：<b>${formatDate(e.log_date)}</b></span>
-        <span class="${overdue ? "overdue" : ""}">Deadline：<b>${formatDate(e.deadline)}${overdue ? "（已逾期）" : ""}</b></span>
+        <span class="${deadlineClass}">Deadline：<b>${formatDate(e.deadline)}${deadlineSuffix}</b></span>
       </div>
       <div class="entry-actions">
         <button class="btn secondary small" data-action="edit" data-id="${e.id}">編輯</button>
@@ -673,7 +813,7 @@
   document.getElementById("overviewItem").addEventListener("click", () => {
     activeView = "overview";
     editingEntryId = null;
-    filterStatus = "all";
+    resetFilters();
     render();
   });
   document.getElementById("addProjectBtn").addEventListener("click", addProject);
