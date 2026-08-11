@@ -173,6 +173,7 @@
   let filterStatus = "all"; // all | pending | inprogress | done
   let editingEntryId = null;
   let loaded = false;
+  let formOpen = false; // true while the add/edit entry form is open, to avoid auto-refresh wiping unsaved input
 
   function pad(n) { return n.toString().padStart(2, "0"); }
   function nowLocalDatetime() {
@@ -434,6 +435,7 @@
   }
 
   function openForm(entry) {
+    formOpen = true;
     const form = document.getElementById("entryForm");
     form.classList.add("open");
     document.getElementById("toggleFormBtn").style.display = "none";
@@ -453,6 +455,7 @@
     document.getElementById("fContent").focus();
   }
   function closeForm() {
+    formOpen = false;
     const form = document.getElementById("entryForm");
     if (!form) return;
     form.classList.remove("open");
@@ -488,8 +491,8 @@
         const { error } = await sb.from("entries").insert(payload);
         if (error) throw error;
       }
-      await loadAll();
       closeForm();
+      await loadAll();
     } catch (err) {
       showError("儲存失敗：" + (err.message || err));
     } finally {
@@ -552,7 +555,7 @@
   }
 
   loadAll();
-  setInterval(loadAll, POLL_MS);
+  setInterval(() => { if (!formOpen) loadAll(); }, POLL_MS);
 })();
 </script>
 </body>
