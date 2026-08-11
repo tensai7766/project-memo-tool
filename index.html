@@ -21,6 +21,8 @@
     --ok-soft: #e6f6ee;
     --warn: #b45309;
     --warn-soft: #fef3e2;
+    --pin: #9333ea;
+    --pin-soft: #f5ecff;
     --radius: 12px;
   }
   * { box-sizing: border-box; }
@@ -45,9 +47,19 @@
     gap: 12px;
   }
   #sidebar h1 { font-size: 17px; margin: 4px 4px 0; }
-  #syncStatus { font-size: 11px; color: var(--text-muted); margin: 0 4px 8px; display: flex; align-items: center; gap: 5px; }
+  #syncStatus { font-size: 11px; color: var(--text-muted); margin: 0 4px 4px; display: flex; align-items: center; gap: 5px; }
   #syncStatus .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
   #syncStatus.offline .dot { background: var(--danger); }
+
+  .overview-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 10px; border-radius: var(--radius); cursor: pointer; font-size: 14px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .overview-item:hover { background: var(--bg); }
+  .overview-item.active { background: var(--pin-soft); color: var(--pin); }
+  #sidebarDivider { border: none; border-top: 1px solid var(--border); margin: 2px 0 6px; }
+
   #projectList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
   .project-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -75,7 +87,7 @@
   .btn.small { padding: 5px 10px; font-size: 12px; }
 
   /* ---------- Main ---------- */
-  #main { flex: 1; padding: 20px 24px 60px; max-width: 900px; margin: 0 auto; width: 100%; }
+  #main { flex: 1; padding: 20px 24px 60px; max-width: 960px; margin: 0 auto; width: 100%; }
   #main.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; color: var(--text-muted); }
   #projectHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
   #projectHeader h2 { font-size: 20px; margin: 0; }
@@ -91,21 +103,29 @@
   #entryForm textarea, #entryForm input, #entryForm select {
     width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; font-family: inherit;
   }
-  #entryForm textarea { min-height: 64px; resize: vertical; }
+  #entryForm textarea { min-height: 56px; resize: vertical; }
   .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .form-row > div { flex: 1; min-width: 140px; }
   .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-  #filterBar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  #toolBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  #filterBar { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip {
     padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
     font-size: 12.5px; cursor: pointer; color: var(--text-muted);
   }
   .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #sortRow { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
+  #sortSelect { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 12.5px; background: var(--panel); }
 
-  #entryList { display: flex; flex-direction: column; gap: 10px; }
+  .section-title { font-size: 13.5px; font-weight: 700; margin: 22px 0 10px; display: flex; align-items: center; gap: 6px; }
+  .section-title:first-child { margin-top: 0; }
+  .section-title.pin { color: var(--pin); }
+
+  #entryList, #pinnedList, #restList { display: flex; flex-direction: column; gap: 10px; }
   .entry-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .entry-card.done { opacity: 0.6; }
+  .entry-card.pinned { border-color: var(--pin); box-shadow: 0 0 0 1px var(--pin) inset; }
   .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .entry-content { font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; flex: 1; }
   .status-select { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
@@ -113,8 +133,14 @@
   .status-inprogress { background: var(--accent-soft); color: var(--accent); }
   .status-done { background: var(--ok-soft); color: var(--ok); }
 
+  .project-tag {
+    font-size: 11px; color: var(--accent); background: var(--accent-soft);
+    padding: 2px 9px; border-radius: 999px; display: inline-block; margin-bottom: 8px; font-weight: 600;
+  }
+
   .entry-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--text-muted); }
   .entry-meta span b { color: var(--text); font-weight: 600; }
+  .entry-meta span.overdue b { color: var(--danger); }
   .entry-actions { display: flex; gap: 6px; margin-top: 10px; }
 
   .empty-state { color: var(--text-muted); font-size: 13.5px; text-align: center; padding: 40px 10px; }
@@ -133,12 +159,15 @@
     }
     #sidebar h1 { display: none; }
     #syncStatus { display: none; }
+    #sidebarDivider { display: none; }
+    .overview-item { flex-shrink: 0; margin-bottom: 0; }
     #projectList { flex-direction: row; overflow-x: auto; flex: 1; padding-bottom: 2px; }
     .project-item { flex-shrink: 0; }
     #addProjectRow { margin-top: 0; padding-top: 0; border-top: none; flex-shrink: 0; }
     #newProjectInput { width: 90px; }
     #main { padding: 16px 14px 40px; }
     .form-row > div { min-width: 100%; }
+    #toolBar { flex-direction: column; align-items: stretch; }
   }
 </style>
 </head>
@@ -148,6 +177,8 @@
   <div id="sidebar">
     <h1>📋 專案備忘錄</h1>
     <div id="syncStatus"><span class="dot"></span><span id="syncText">同步中…</span></div>
+    <div id="overviewItem" class="overview-item">📊 總覽</div>
+    <hr id="sidebarDivider">
     <ul id="projectList"></ul>
     <div id="addProjectRow">
       <input id="newProjectInput" placeholder="新專案名稱" maxlength="40">
@@ -169,42 +200,71 @@
 
   let projects = [];
   let entries = [];
+  let activeView = "project"; // "project" | "overview"
   let activeProjectId = null;
   let filterStatus = "all"; // all | pending | inprogress | done
+  let sortBy = "deadline";  // deadline | created | name | unit
   let editingEntryId = null;
   let loaded = false;
   let formOpen = false; // true while the add/edit entry form is open, to avoid auto-refresh wiping unsaved input
 
-  function pad(n) { return n.toString().padStart(2, "0"); }
-  function nowLocalDatetime() {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  function formatDatetime(iso) {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    if (isNaN(d)) return "—";
-    return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  function elapsedSince(iso) {
-    const d = new Date(iso);
-    if (isNaN(d)) return "";
-    const diffMs = Date.now() - d.getTime();
-    const hrs = diffMs / 3600000;
-    if (hrs < 1) return "不到 1 小時前";
-    if (hrs < 24) return `${Math.floor(hrs)} 小時前`;
-    return `${Math.floor(hrs / 24)} 天前`;
-  }
-  function estLabel(value, unit) {
-    if (value === undefined || value === null || value === "") return "—";
-    return `${value} ${unit === "day" ? "天" : "小時"}`;
-  }
   const STATUS_LABEL = { pending: "待處理", inprogress: "處理中", done: "已完成" };
+  const SORT_LABEL = { deadline: "Deadline", created: "建立時間", name: "姓名", unit: "單位" };
 
+  function pad(n) { return n.toString().padStart(2, "0"); }
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+  function formatDate(dateStr) {
+    if (!dateStr) return "—";
+    const [y, m, d] = dateStr.split("-");
+    if (!y) return "—";
+    return `${y}/${m}/${d}`;
+  }
+  function isOverdue(entry) {
+    if (!entry.deadline || entry.status === "done") return false;
+    return entry.deadline < todayStr();
+  }
+  function getWeekRange() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = today.getDay(); // 0 = Sunday .. 6 = Saturday
+    const start = new Date(today); start.setDate(today.getDate() - day);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return { startStr: fmt(start), endStr: fmt(end) };
+  }
+  function isInWeek(dateStr, startStr, endStr) {
+    if (!dateStr) return false;
+    return dateStr >= startStr && dateStr <= endStr;
+  }
   function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str;
     return d.innerHTML;
+  }
+
+  function sortEntries(list, by) {
+    const arr = [...list];
+    arr.sort((a, b) => {
+      if (by === "name") return cmpText(a.name, b.name);
+      if (by === "unit") return cmpText(a.unit, b.unit);
+      if (by === "created") return new Date(a.created_at) - new Date(b.created_at);
+      // deadline (default)
+      if (!a.deadline && !b.deadline) return 0;
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0;
+    });
+    return arr;
+  }
+  function cmpText(a, b) {
+    const av = (a || "").trim(), bv = (b || "").trim();
+    if (!av && !bv) return 0;
+    if (!av) return 1;
+    if (!bv) return -1;
+    return av.localeCompare(bv, "zh-Hant");
   }
 
   function setSyncStatus(state, text) {
@@ -212,7 +272,6 @@
     el.className = state === "offline" ? "offline" : "";
     document.getElementById("syncText").textContent = text;
   }
-
   function showError(msg) {
     const el = document.getElementById("globalErrorHost");
     if (!el) return;
@@ -228,7 +287,7 @@
     try {
       const [{ data: pData, error: pErr }, { data: eData, error: eErr }] = await Promise.all([
         sb.from("projects").select("*").order("created_at", { ascending: true }),
-        sb.from("entries").select("*").order("log_time", { ascending: true }),
+        sb.from("entries").select("*").order("created_at", { ascending: true }),
       ]);
       if (pErr) throw pErr;
       if (eErr) throw eErr;
@@ -245,12 +304,9 @@
     render();
   }
 
-  function projectEntries(pid) {
-    return entries.filter(e => e.project_id === pid);
-  }
-  function pendingCount(pid) {
-    return projectEntries(pid).filter(e => e.status !== "done").length;
-  }
+  function projectEntries(pid) { return entries.filter(e => e.project_id === pid); }
+  function pendingCount(pid) { return projectEntries(pid).filter(e => e.status !== "done").length; }
+  function projectName(pid) { const p = projects.find(p => p.id === pid); return p ? p.name : "（已刪除的專案）"; }
   function ensureActiveProject() {
     if (!projects.find(p => p.id === activeProjectId)) {
       activeProjectId = projects.length ? projects[0].id : null;
@@ -259,17 +315,19 @@
 
   // ---- Rendering ----
   function renderSidebar() {
+    document.getElementById("overviewItem").className = "overview-item" + (activeView === "overview" ? " active" : "");
     const list = document.getElementById("projectList");
     list.innerHTML = "";
     projects.forEach(p => {
       const li = document.createElement("li");
-      li.className = "project-item" + (p.id === activeProjectId ? " active" : "");
+      li.className = "project-item" + (activeView === "project" && p.id === activeProjectId ? " active" : "");
       const count = pendingCount(p.id);
       li.innerHTML = `
         <span class="project-name">${escapeHtml(p.name)}</span>
         <span class="badge ${count === 0 ? "zero" : ""}">${count}</span>
       `;
       li.addEventListener("click", () => {
+        activeView = "project";
         activeProjectId = p.id;
         editingEntryId = null;
         filterStatus = "all";
@@ -277,6 +335,85 @@
       });
       list.appendChild(li);
     });
+  }
+
+  function sortToolbarHtml() {
+    return `
+      <div id="sortRow">
+        排序：
+        <select id="sortSelect">
+          ${Object.keys(SORT_LABEL).map(k => `<option value="${k}" ${sortBy === k ? "selected" : ""}>${SORT_LABEL[k]}</option>`).join("")}
+        </select>
+      </div>
+    `;
+  }
+  function filterBarHtml() {
+    return `
+      <div id="filterBar">
+        ${["all", "pending", "inprogress", "done"].map(s => `
+          <div class="chip ${filterStatus === s ? "active" : ""}" data-status="${s}">
+            ${s === "all" ? "全部" : STATUS_LABEL[s]}
+          </div>`).join("")}
+      </div>
+    `;
+  }
+  function bindToolbar() {
+    document.getElementById("sortSelect").addEventListener("change", (e) => { sortBy = e.target.value; render(); });
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => { filterStatus = chip.dataset.status; render(); });
+    });
+  }
+
+  function entryFormHtml() {
+    return `
+      <form id="entryForm">
+        <div>
+          <label>內容</label>
+          <textarea id="fContent" placeholder="這筆記錄要做什麼／發生了什麼事" required></textarea>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>姓名</label>
+            <input type="text" id="fName" placeholder="負責人姓名">
+          </div>
+          <div>
+            <label>單位</label>
+            <input type="text" id="fUnit" placeholder="所屬單位">
+          </div>
+          <div>
+            <label>LINE ID</label>
+            <input type="text" id="fLineId" placeholder="LINE ID">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>登錄日期</label>
+            <input type="date" id="fLogDate">
+          </div>
+          <div>
+            <label>Deadline</label>
+            <input type="date" id="fDeadline">
+          </div>
+          <div>
+            <label>狀態</label>
+            <select id="fStatus">
+              <option value="pending">待處理</option>
+              <option value="inprogress">處理中</option>
+              <option value="done">已完成</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn secondary small" id="cancelFormBtn">取消</button>
+          <button type="submit" class="btn small" id="submitFormBtn">儲存</button>
+        </div>
+      </form>
+    `;
+  }
+  function bindEntryForm() {
+    document.getElementById("toggleFormBtn")?.addEventListener("click", () => openForm());
+    document.getElementById("cancelFormBtn").addEventListener("click", closeForm);
+    document.getElementById("entryForm").addEventListener("submit", onSubmitEntry);
   }
 
   function renderMain() {
@@ -288,6 +425,11 @@
       return;
     }
 
+    if (activeView === "overview") {
+      renderOverview(main);
+      return;
+    }
+
     if (!projects.length) {
       main.className = "empty";
       main.innerHTML = `<div><div id="globalErrorHost"></div>還沒有專案<br><span style="font-size:13px">先在左側新增一個專案開始記錄吧</span></div>`;
@@ -296,13 +438,8 @@
 
     ensureActiveProject();
     const project = projects.find(p => p.id === activeProjectId);
-    const projEntries = projectEntries(project.id)
-      .filter(e => filterStatus === "all" || e.status === filterStatus)
-      .sort((a, b) => {
-        const rank = s => (s === "done" ? 1 : 0);
-        if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
-        return new Date(a.log_time) - new Date(b.log_time);
-      });
+    const filtered = projectEntries(project.id).filter(e => filterStatus === "all" || e.status === filterStatus);
+    const sorted = sortEntries(filtered, sortBy);
 
     const total = projectEntries(project.id).length;
     const pending = pendingCount(project.id);
@@ -321,47 +458,9 @@
 
       <button class="btn" id="toggleFormBtn" style="margin-bottom:14px;">＋ 新增記錄</button>
 
-      <form id="entryForm">
-        <div>
-          <label>內容</label>
-          <textarea id="fContent" placeholder="這筆記錄要做什麼／發生了什麼事" required></textarea>
-        </div>
-        <div class="form-row">
-          <div>
-            <label>登入時間</label>
-            <input type="datetime-local" id="fLogTime">
-          </div>
-          <div>
-            <label>需處理時間</label>
-            <div style="display:flex; gap:6px;">
-              <input type="number" id="fEstValue" min="0" step="0.5" placeholder="數值" style="flex:1;">
-              <select id="fEstUnit" style="flex:1;">
-                <option value="hour">小時</option>
-                <option value="day">天</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label>狀態</label>
-            <select id="fStatus">
-              <option value="pending">待處理</option>
-              <option value="inprogress">處理中</option>
-              <option value="done">已完成</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn secondary small" id="cancelFormBtn">取消</button>
-          <button type="submit" class="btn small" id="submitFormBtn">儲存</button>
-        </div>
-      </form>
+      ${entryFormHtml()}
 
-      <div id="filterBar">
-        ${["all", "pending", "inprogress", "done"].map(s => `
-          <div class="chip ${filterStatus === s ? "active" : ""}" data-status="${s}">
-            ${s === "all" ? "全部" : STATUS_LABEL[s]}
-          </div>`).join("")}
-      </div>
+      <div id="toolBar">${filterBarHtml()}${sortToolbarHtml()}</div>
 
       <div id="entryList"></div>
     `;
@@ -369,28 +468,68 @@
     document.getElementById("refreshBtn").addEventListener("click", loadAll);
     document.getElementById("renameProjectBtn").addEventListener("click", () => renameProject(project));
     document.getElementById("deleteProjectBtn").addEventListener("click", () => deleteProject(project));
-    document.getElementById("toggleFormBtn").addEventListener("click", () => openForm());
-    document.getElementById("cancelFormBtn").addEventListener("click", closeForm);
-    document.getElementById("entryForm").addEventListener("submit", onSubmitEntry);
-    document.querySelectorAll(".chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        filterStatus = chip.dataset.status;
-        render();
-      });
-    });
+    bindEntryForm();
+    bindToolbar();
 
     const entryList = document.getElementById("entryList");
-    if (!projEntries.length) {
+    if (!sorted.length) {
       entryList.innerHTML = `<div class="empty-state">這個篩選條件下沒有記錄</div>`;
     } else {
-      projEntries.forEach(e => entryList.appendChild(renderEntryCard(e)));
+      sorted.forEach(e => entryList.appendChild(renderEntryCard(e, false)));
     }
   }
 
-  function renderEntryCard(e) {
+  function renderOverview(main) {
+    const { startStr, endStr } = getWeekRange();
+    const filtered = entries.filter(e => filterStatus === "all" || e.status === filterStatus);
+    const pinned = sortEntries(filtered.filter(e => isInWeek(e.deadline, startStr, endStr)), "deadline");
+    const pinnedIds = new Set(pinned.map(e => e.id));
+    const rest = sortEntries(filtered.filter(e => !pinnedIds.has(e.id)), sortBy);
+
+    const totalPending = entries.filter(e => e.status !== "done").length;
+
+    main.innerHTML = `
+      <div id="globalErrorHost"></div>
+      <div id="projectHeader">
+        <h2>📊 總覽</h2>
+        <div id="headerActions">
+          <button class="btn secondary small" id="refreshBtn">重新整理</button>
+        </div>
+      </div>
+      <div id="projectMeta">共 ${entries.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）</div>
+
+      <div id="toolBar">${filterBarHtml()}${sortToolbarHtml()}</div>
+
+      <div class="section-title pin">📌 本週待辦（${formatDate(startStr)} - ${formatDate(endStr)}）</div>
+      <div id="pinnedList"></div>
+
+      <div class="section-title">其他工作</div>
+      <div id="restList"></div>
+    `;
+
+    document.getElementById("refreshBtn").addEventListener("click", loadAll);
+    bindToolbar();
+
+    const pinnedList = document.getElementById("pinnedList");
+    if (!pinned.length) {
+      pinnedList.innerHTML = `<div class="empty-state">本週沒有到期的工作</div>`;
+    } else {
+      pinned.forEach(e => pinnedList.appendChild(renderEntryCard(e, true)));
+    }
+    const restList = document.getElementById("restList");
+    if (!rest.length) {
+      restList.innerHTML = `<div class="empty-state">沒有其他記錄</div>`;
+    } else {
+      rest.forEach(e => restList.appendChild(renderEntryCard(e, false)));
+    }
+  }
+
+  function renderEntryCard(e, pinnedStyle) {
     const card = document.createElement("div");
-    card.className = "entry-card" + (e.status === "done" ? " done" : "");
+    card.className = "entry-card" + (e.status === "done" ? " done" : "") + (pinnedStyle ? " pinned" : "");
+    const overdue = isOverdue(e);
     card.innerHTML = `
+      ${activeView === "overview" ? `<div class="project-tag">${escapeHtml(projectName(e.project_id))}</div>` : ""}
       <div class="entry-top">
         <div class="entry-content">${escapeHtml(e.content)}</div>
         <select class="status-select status-${e.status}" data-id="${e.id}">
@@ -400,8 +539,11 @@
         </select>
       </div>
       <div class="entry-meta">
-        <span>登入時間：<b>${formatDatetime(e.log_time)}</b>（${elapsedSince(e.log_time)}）</span>
-        <span>需處理時間：<b>${estLabel(e.est_value, e.est_unit)}</b></span>
+        <span>姓名：<b>${e.name ? escapeHtml(e.name) : "—"}</b></span>
+        <span>單位：<b>${e.unit ? escapeHtml(e.unit) : "—"}</b></span>
+        <span>LINE ID：<b>${e.line_id ? escapeHtml(e.line_id) : "—"}</b></span>
+        <span>登錄日期：<b>${formatDate(e.log_date)}</b></span>
+        <span class="${overdue ? "overdue" : ""}">Deadline：<b>${formatDate(e.deadline)}${overdue ? "（已逾期）" : ""}</b></span>
       </div>
       <div class="entry-actions">
         <button class="btn secondary small" data-action="edit" data-id="${e.id}">編輯</button>
@@ -438,18 +580,21 @@
     formOpen = true;
     const form = document.getElementById("entryForm");
     form.classList.add("open");
-    document.getElementById("toggleFormBtn").style.display = "none";
+    const toggleBtn = document.getElementById("toggleFormBtn");
+    if (toggleBtn) toggleBtn.style.display = "none";
     if (entry) {
       editingEntryId = entry.id;
       document.getElementById("fContent").value = entry.content;
-      document.getElementById("fLogTime").value = entry.log_time ? entry.log_time.slice(0, 16) : nowLocalDatetime();
-      document.getElementById("fEstValue").value = entry.est_value ?? "";
-      document.getElementById("fEstUnit").value = entry.est_unit || "hour";
+      document.getElementById("fName").value = entry.name || "";
+      document.getElementById("fUnit").value = entry.unit || "";
+      document.getElementById("fLineId").value = entry.line_id || "";
+      document.getElementById("fLogDate").value = entry.log_date || todayStr();
+      document.getElementById("fDeadline").value = entry.deadline || "";
       document.getElementById("fStatus").value = entry.status;
       document.getElementById("submitFormBtn").textContent = "更新";
     } else {
       editingEntryId = null;
-      document.getElementById("fLogTime").value = nowLocalDatetime();
+      document.getElementById("fLogDate").value = todayStr();
       document.getElementById("submitFormBtn").textContent = "儲存";
     }
     document.getElementById("fContent").focus();
@@ -459,7 +604,8 @@
     const form = document.getElementById("entryForm");
     if (!form) return;
     form.classList.remove("open");
-    document.getElementById("toggleFormBtn").style.display = "inline-block";
+    const toggleBtn = document.getElementById("toggleFormBtn");
+    if (toggleBtn) toggleBtn.style.display = "inline-block";
     editingEntryId = null;
   }
 
@@ -467,19 +613,17 @@
     ev.preventDefault();
     const content = document.getElementById("fContent").value.trim();
     if (!content) return;
-    const logTime = document.getElementById("fLogTime").value || nowLocalDatetime();
-    const estValueRaw = document.getElementById("fEstValue").value;
-    const estUnit = document.getElementById("fEstUnit").value;
-    const status = document.getElementById("fStatus").value;
     const submitBtn = document.getElementById("submitFormBtn");
     submitBtn.disabled = true;
 
     const payload = {
       content,
-      log_time: new Date(logTime).toISOString(),
-      est_value: estValueRaw === "" ? null : Number(estValueRaw),
-      est_unit: estUnit,
-      status,
+      name: document.getElementById("fName").value.trim() || null,
+      unit: document.getElementById("fUnit").value.trim() || null,
+      line_id: document.getElementById("fLineId").value.trim() || null,
+      log_date: document.getElementById("fLogDate").value || todayStr(),
+      deadline: document.getElementById("fDeadline").value || null,
+      status: document.getElementById("fStatus").value,
     };
 
     try {
@@ -526,6 +670,12 @@
     }
   }
 
+  document.getElementById("overviewItem").addEventListener("click", () => {
+    activeView = "overview";
+    editingEntryId = null;
+    filterStatus = "all";
+    render();
+  });
   document.getElementById("addProjectBtn").addEventListener("click", addProject);
   document.getElementById("newProjectInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") addProject();
@@ -539,6 +689,7 @@
       const { data, error } = await sb.from("projects").insert({ name }).select().single();
       if (error) throw error;
       projects.push(data);
+      activeView = "project";
       activeProjectId = data.id;
       input.value = "";
       render();
