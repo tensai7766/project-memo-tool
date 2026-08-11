@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>專案備忘錄</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #e3e5e9;
+    --text: #1c1e21;
+    --text-muted: #6b7280;
+    --accent: #3b5bfd;
+    --accent-soft: #eef1ff;
+    --danger: #e5484d;
+    --danger-soft: #fdeceb;
+    --ok: #18794e;
+    --ok-soft: #e6f6ee;
+    --warn: #b45309;
+    --warn-soft: #fef3e2;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { display: flex; min-height: 100vh; flex-direction: row; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #sidebar h1 { font-size: 17px; margin: 4px 4px 0; }
+  #syncStatus { font-size: 11px; color: var(--text-muted); margin: 0 4px 8px; display: flex; align-items: center; gap: 5px; }
+  #syncStatus .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+  #syncStatus.offline .dot { background: var(--danger); }
+  #projectList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .project-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px; border-radius: var(--radius); cursor: pointer; font-size: 14px; gap: 6px;
+  }
+  .project-item:hover { background: var(--bg); }
+  .project-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .project-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .badge {
+    font-size: 11px; background: var(--warn-soft); color: var(--warn);
+    padding: 1px 7px; border-radius: 999px; font-weight: 600; min-width: 18px; text-align: center;
+  }
+  .badge.zero { background: var(--bg); color: var(--text-muted); }
+  #addProjectRow { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); }
+  #newProjectInput { flex: 1; padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border); font-size: 13px; }
+  .btn {
+    border: none; border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; background: var(--accent); color: #fff;
+  }
+  .btn:hover { filter: brightness(1.05); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .btn.icon { padding: 6px 9px; font-size: 13px; }
+  .btn.danger { background: var(--danger); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+
+  /* ---------- Main ---------- */
+  #main { flex: 1; padding: 20px 24px 60px; max-width: 900px; margin: 0 auto; width: 100%; }
+  #main.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; color: var(--text-muted); }
+  #projectHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  #projectHeader h2 { font-size: 20px; margin: 0; }
+  #projectMeta { color: var(--text-muted); font-size: 13px; margin: 4px 0 18px; }
+  #headerActions { display: flex; gap: 8px; }
+
+  #entryForm {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 20px; display: none; flex-direction: column; gap: 10px;
+  }
+  #entryForm.open { display: flex; }
+  #entryForm label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; display: block; }
+  #entryForm textarea, #entryForm input, #entryForm select {
+    width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; font-family: inherit;
+  }
+  #entryForm textarea { min-height: 64px; resize: vertical; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .form-row > div { flex: 1; min-width: 140px; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+  #filterBar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip {
+    padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
+    font-size: 12.5px; cursor: pointer; color: var(--text-muted);
+  }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  #entryList { display: flex; flex-direction: column; gap: 10px; }
+  .entry-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .entry-card.done { opacity: 0.6; }
+  .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .entry-content { font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; flex: 1; }
+  .status-select { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
+  .status-pending { background: var(--warn-soft); color: var(--warn); }
+  .status-inprogress { background: var(--accent-soft); color: var(--accent); }
+  .status-done { background: var(--ok-soft); color: var(--ok); }
+
+  .entry-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--text-muted); }
+  .entry-meta span b { color: var(--text); font-weight: 600; }
+  .entry-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+  .empty-state { color: var(--text-muted); font-size: 13.5px; text-align: center; padding: 40px 10px; }
+  #globalError {
+    display: none; background: var(--danger-soft); color: var(--danger); font-size: 13px;
+    padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 720px) {
+    #app { flex-direction: column; }
+    #sidebar {
+      width: 100%; border-right: none; border-bottom: 1px solid var(--border);
+      flex-direction: row; align-items: center; padding: 10px 12px; gap: 8px;
+      position: sticky; top: 0; z-index: 5; flex-wrap: wrap;
+    }
+    #sidebar h1 { display: none; }
+    #syncStatus { display: none; }
+    #projectList { flex-direction: row; overflow-x: auto; flex: 1; padding-bottom: 2px; }
+    .project-item { flex-shrink: 0; }
+    #addProjectRow { margin-top: 0; padding-top: 0; border-top: none; flex-shrink: 0; }
+    #newProjectInput { width: 90px; }
+    #main { padding: 16px 14px 40px; }
+    .form-row > div { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <h1>📋 專案備忘錄</h1>
+    <div id="syncStatus"><span class="dot"></span><span id="syncText">同步中…</span></div>
+    <ul id="projectList"></ul>
+    <div id="addProjectRow">
+      <input id="newProjectInput" placeholder="新專案名稱" maxlength="40">
+      <button class="btn icon" id="addProjectBtn">＋</button>
+    </div>
+  </div>
+
+  <div id="main"></div>
+</div>
+
+<script>
+(function () {
+  // ---- Supabase config ----
+  const SUPABASE_URL = "https://lgyttghbuktuuqvcmlqd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_qDfkmdBCwzDQV2ZQVeQQLQ_aXQawz_l";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const POLL_MS = 15000; // auto refresh interval
+
+  let projects = [];
+  let entries = [];
+  let activeProjectId = null;
+  let filterStatus = "all"; // all | pending | inprogress | done
+  let editingEntryId = null;
+  let loaded = false;
+
+  function pad(n) { return n.toString().padStart(2, "0"); }
+  function nowLocalDatetime() {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function formatDatetime(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d)) return "—";
+    return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function elapsedSince(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    const diffMs = Date.now() - d.getTime();
+    const hrs = diffMs / 3600000;
+    if (hrs < 1) return "不到 1 小時前";
+    if (hrs < 24) return `${Math.floor(hrs)} 小時前`;
+    return `${Math.floor(hrs / 24)} 天前`;
+  }
+  function estLabel(value, unit) {
+    if (value === undefined || value === null || value === "") return "—";
+    return `${value} ${unit === "day" ? "天" : "小時"}`;
+  }
+  const STATUS_LABEL = { pending: "待處理", inprogress: "處理中", done: "已完成" };
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function setSyncStatus(state, text) {
+    const el = document.getElementById("syncStatus");
+    el.className = state === "offline" ? "offline" : "";
+    document.getElementById("syncText").textContent = text;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("globalErrorHost");
+    if (!el) return;
+    el.innerHTML = `<div id="globalError" style="display:flex;">${escapeHtml(msg)}</div>`;
+  }
+  function clearError() {
+    const el = document.getElementById("globalErrorHost");
+    if (el) el.innerHTML = "";
+  }
+
+  // ---- Data loading ----
+  async function loadAll() {
+    try {
+      const [{ data: pData, error: pErr }, { data: eData, error: eErr }] = await Promise.all([
+        sb.from("projects").select("*").order("created_at", { ascending: true }),
+        sb.from("entries").select("*").order("log_time", { ascending: true }),
+      ]);
+      if (pErr) throw pErr;
+      if (eErr) throw eErr;
+      projects = pData || [];
+      entries = eData || [];
+      loaded = true;
+      setSyncStatus("online", "已同步");
+      clearError();
+    } catch (e) {
+      setSyncStatus("offline", "連線失敗");
+      showError("無法連線到資料庫，請檢查網路連線後重新整理。（" + (e.message || e) + "）");
+      console.error(e);
+    }
+    render();
+  }
+
+  function projectEntries(pid) {
+    return entries.filter(e => e.project_id === pid);
+  }
+  function pendingCount(pid) {
+    return projectEntries(pid).filter(e => e.status !== "done").length;
+  }
+  function ensureActiveProject() {
+    if (!projects.find(p => p.id === activeProjectId)) {
+      activeProjectId = projects.length ? projects[0].id : null;
+    }
+  }
+
+  // ---- Rendering ----
+  function renderSidebar() {
+    const list = document.getElementById("projectList");
+    list.innerHTML = "";
+    projects.forEach(p => {
+      const li = document.createElement("li");
+      li.className = "project-item" + (p.id === activeProjectId ? " active" : "");
+      const count = pendingCount(p.id);
+      li.innerHTML = `
+        <span class="project-name">${escapeHtml(p.name)}</span>
+        <span class="badge ${count === 0 ? "zero" : ""}">${count}</span>
+      `;
+      li.addEventListener("click", () => {
+        activeProjectId = p.id;
+        editingEntryId = null;
+        filterStatus = "all";
+        render();
+      });
+      list.appendChild(li);
+    });
+  }
+
+  function renderMain() {
+    const main = document.getElementById("main");
+    main.className = "";
+
+    if (!loaded) {
+      main.innerHTML = `<div id="globalErrorHost"></div><div class="empty-state">載入中…</div>`;
+      return;
+    }
+
+    if (!projects.length) {
+      main.className = "empty";
+      main.innerHTML = `<div><div id="globalErrorHost"></div>還沒有專案<br><span style="font-size:13px">先在左側新增一個專案開始記錄吧</span></div>`;
+      return;
+    }
+
+    ensureActiveProject();
+    const project = projects.find(p => p.id === activeProjectId);
+    const projEntries = projectEntries(project.id)
+      .filter(e => filterStatus === "all" || e.status === filterStatus)
+      .sort((a, b) => {
+        const rank = s => (s === "done" ? 1 : 0);
+        if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+        return new Date(a.log_time) - new Date(b.log_time);
+      });
+
+    const total = projectEntries(project.id).length;
+    const pending = pendingCount(project.id);
+
+    main.innerHTML = `
+      <div id="globalErrorHost"></div>
+      <div id="projectHeader">
+        <h2>${escapeHtml(project.name)}</h2>
+        <div id="headerActions">
+          <button class="btn secondary small" id="refreshBtn">重新整理</button>
+          <button class="btn secondary small" id="renameProjectBtn">重新命名</button>
+          <button class="btn danger small" id="deleteProjectBtn">刪除專案</button>
+        </div>
+      </div>
+      <div id="projectMeta">共 ${total} 筆記錄・${pending} 筆待處理</div>
+
+      <button class="btn" id="toggleFormBtn" style="margin-bottom:14px;">＋ 新增記錄</button>
+
+      <form id="entryForm">
+        <div>
+          <label>內容</label>
+          <textarea id="fContent" placeholder="這筆記錄要做什麼／發生了什麼事" required></textarea>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>登入時間</label>
+            <input type="datetime-local" id="fLogTime">
+          </div>
+          <div>
+            <label>需處理時間</label>
+            <div style="display:flex; gap:6px;">
+              <input type="number" id="fEstValue" min="0" step="0.5" placeholder="數值" style="flex:1;">
+              <select id="fEstUnit" style="flex:1;">
+                <option value="hour">小時</option>
+                <option value="day">天</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>狀態</label>
+            <select id="fStatus">
+              <option value="pending">待處理</option>
+              <option value="inprogress">處理中</option>
+              <option value="done">已完成</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn secondary small" id="cancelFormBtn">取消</button>
+          <button type="submit" class="btn small" id="submitFormBtn">儲存</button>
+        </div>
+      </form>
+
+      <div id="filterBar">
+        ${["all", "pending", "inprogress", "done"].map(s => `
+          <div class="chip ${filterStatus === s ? "active" : ""}" data-status="${s}">
+            ${s === "all" ? "全部" : STATUS_LABEL[s]}
+          </div>`).join("")}
+      </div>
+
+      <div id="entryList"></div>
+    `;
+
+    document.getElementById("refreshBtn").addEventListener("click", loadAll);
+    document.getElementById("renameProjectBtn").addEventListener("click", () => renameProject(project));
+    document.getElementById("deleteProjectBtn").addEventListener("click", () => deleteProject(project));
+    document.getElementById("toggleFormBtn").addEventListener("click", () => openForm());
+    document.getElementById("cancelFormBtn").addEventListener("click", closeForm);
+    document.getElementById("entryForm").addEventListener("submit", onSubmitEntry);
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        filterStatus = chip.dataset.status;
+        render();
+      });
+    });
+
+    const entryList = document.getElementById("entryList");
+    if (!projEntries.length) {
+      entryList.innerHTML = `<div class="empty-state">這個篩選條件下沒有記錄</div>`;
+    } else {
+      projEntries.forEach(e => entryList.appendChild(renderEntryCard(e)));
+    }
+  }
+
+  function renderEntryCard(e) {
+    const card = document.createElement("div");
+    card.className = "entry-card" + (e.status === "done" ? " done" : "");
+    card.innerHTML = `
+      <div class="entry-top">
+        <div class="entry-content">${escapeHtml(e.content)}</div>
+        <select class="status-select status-${e.status}" data-id="${e.id}">
+          <option value="pending" ${e.status === "pending" ? "selected" : ""}>待處理</option>
+          <option value="inprogress" ${e.status === "inprogress" ? "selected" : ""}>處理中</option>
+          <option value="done" ${e.status === "done" ? "selected" : ""}>已完成</option>
+        </select>
+      </div>
+      <div class="entry-meta">
+        <span>登入時間：<b>${formatDatetime(e.log_time)}</b>（${elapsedSince(e.log_time)}）</span>
+        <span>需處理時間：<b>${estLabel(e.est_value, e.est_unit)}</b></span>
+      </div>
+      <div class="entry-actions">
+        <button class="btn secondary small" data-action="edit" data-id="${e.id}">編輯</button>
+        <button class="btn danger small" data-action="delete" data-id="${e.id}">刪除</button>
+      </div>
+    `;
+    card.querySelector(".status-select").addEventListener("change", async (ev) => {
+      const newStatus = ev.target.value;
+      try {
+        const { error } = await sb.from("entries").update({ status: newStatus }).eq("id", e.id);
+        if (error) throw error;
+        e.status = newStatus;
+        render();
+      } catch (err) {
+        showError("更新狀態失敗：" + (err.message || err));
+      }
+    });
+    card.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(e));
+    card.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+      if (!confirm("確定要刪除這筆記錄嗎？")) return;
+      try {
+        const { error } = await sb.from("entries").delete().eq("id", e.id);
+        if (error) throw error;
+        entries = entries.filter(x => x.id !== e.id);
+        render();
+      } catch (err) {
+        showError("刪除失敗：" + (err.message || err));
+      }
+    });
+    return card;
+  }
+
+  function openForm(entry) {
+    const form = document.getElementById("entryForm");
+    form.classList.add("open");
+    document.getElementById("toggleFormBtn").style.display = "none";
+    if (entry) {
+      editingEntryId = entry.id;
+      document.getElementById("fContent").value = entry.content;
+      document.getElementById("fLogTime").value = entry.log_time ? entry.log_time.slice(0, 16) : nowLocalDatetime();
+      document.getElementById("fEstValue").value = entry.est_value ?? "";
+      document.getElementById("fEstUnit").value = entry.est_unit || "hour";
+      document.getElementById("fStatus").value = entry.status;
+      document.getElementById("submitFormBtn").textContent = "更新";
+    } else {
+      editingEntryId = null;
+      document.getElementById("fLogTime").value = nowLocalDatetime();
+      document.getElementById("submitFormBtn").textContent = "儲存";
+    }
+    document.getElementById("fContent").focus();
+  }
+  function closeForm() {
+    const form = document.getElementById("entryForm");
+    if (!form) return;
+    form.classList.remove("open");
+    document.getElementById("toggleFormBtn").style.display = "inline-block";
+    editingEntryId = null;
+  }
+
+  async function onSubmitEntry(ev) {
+    ev.preventDefault();
+    const content = document.getElementById("fContent").value.trim();
+    if (!content) return;
+    const logTime = document.getElementById("fLogTime").value || nowLocalDatetime();
+    const estValueRaw = document.getElementById("fEstValue").value;
+    const estUnit = document.getElementById("fEstUnit").value;
+    const status = document.getElementById("fStatus").value;
+    const submitBtn = document.getElementById("submitFormBtn");
+    submitBtn.disabled = true;
+
+    const payload = {
+      content,
+      log_time: new Date(logTime).toISOString(),
+      est_value: estValueRaw === "" ? null : Number(estValueRaw),
+      est_unit: estUnit,
+      status,
+    };
+
+    try {
+      if (editingEntryId) {
+        const { error } = await sb.from("entries").update(payload).eq("id", editingEntryId);
+        if (error) throw error;
+      } else {
+        payload.project_id = activeProjectId;
+        const { error } = await sb.from("entries").insert(payload);
+        if (error) throw error;
+      }
+      await loadAll();
+      closeForm();
+    } catch (err) {
+      showError("儲存失敗：" + (err.message || err));
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  async function renameProject(project) {
+    const name = prompt("專案名稱", project.name);
+    if (!name || !name.trim()) return;
+    try {
+      const { error } = await sb.from("projects").update({ name: name.trim() }).eq("id", project.id);
+      if (error) throw error;
+      project.name = name.trim();
+      render();
+    } catch (err) {
+      showError("重新命名失敗：" + (err.message || err));
+    }
+  }
+  async function deleteProject(project) {
+    if (!confirm(`確定要刪除專案「${project.name}」嗎？其下所有記錄也會一併刪除。`)) return;
+    try {
+      const { error } = await sb.from("projects").delete().eq("id", project.id);
+      if (error) throw error;
+      projects = projects.filter(p => p.id !== project.id);
+      entries = entries.filter(e => e.project_id !== project.id);
+      activeProjectId = null;
+      render();
+    } catch (err) {
+      showError("刪除專案失敗：" + (err.message || err));
+    }
+  }
+
+  document.getElementById("addProjectBtn").addEventListener("click", addProject);
+  document.getElementById("newProjectInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addProject();
+  });
+  async function addProject() {
+    const input = document.getElementById("newProjectInput");
+    const name = input.value.trim();
+    if (!name) return;
+    input.disabled = true;
+    try {
+      const { data, error } = await sb.from("projects").insert({ name }).select().single();
+      if (error) throw error;
+      projects.push(data);
+      activeProjectId = data.id;
+      input.value = "";
+      render();
+    } catch (err) {
+      showError("新增專案失敗：" + (err.message || err));
+    } finally {
+      input.disabled = false;
+    }
+  }
+
+  function render() {
+    renderSidebar();
+    renderMain();
+  }
+
+  loadAll();
+  setInterval(loadAll, POLL_MS);
+})();
+</script>
+</body>
+</html>
