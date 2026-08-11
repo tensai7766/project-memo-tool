@@ -284,6 +284,7 @@
   function eAgency(e) { return e._client ? (e._client.agency || "") : ""; }
   function eDept(e) { return e._client ? (e._client.department || "") : ""; }
   function eLineId(e) { return e._client ? (e._client.line_id || "") : ""; }
+  function eTitle(e) { return e._client ? (e._client.title || "") : ""; }
   function eEmail(e) { return e._client ? (e._client.email || "") : ""; }
   function ePhone(e) { return e._client ? (e._client.phone || "") : ""; }
   function attachClients() {
@@ -344,15 +345,15 @@
   }
   function toCSV(list, withProject) {
     const headers = withProject
-      ? ["專案", "內容", "業主", "機關", "科室", "LINE ID", "Email", "電話", "登錄日期", "Deadline", "狀態"]
-      : ["內容", "業主", "機關", "科室", "LINE ID", "Email", "電話", "登錄日期", "Deadline", "狀態"];
+      ? ["專案", "內容", "業主", "機關", "科室", "職稱", "LINE ID", "登錄日期", "Deadline", "狀態"]
+      : ["內容", "業主", "機關", "科室", "職稱", "LINE ID", "登錄日期", "Deadline", "狀態"];
     const lines = [headers.join(",")];
     list.forEach(e => {
       const row = [];
       if (withProject) row.push(csvEscape(projectName(e.project_id)));
       row.push(
         csvEscape(e.content), csvEscape(eName(e)), csvEscape(eAgency(e)), csvEscape(eDept(e)),
-        csvEscape(eLineId(e)), csvEscape(eEmail(e)), csvEscape(ePhone(e)),
+        csvEscape(eTitle(e)), csvEscape(eLineId(e)),
         csvEscape(e.log_date), csvEscape(e.deadline), csvEscape(STATUS_LABEL[e.status] || e.status)
       );
       lines.push(row.join(","));
@@ -719,9 +720,8 @@
         <span>業主：<b>${e._client ? escapeHtml(e._client.name) : "—"}</b></span>
         <span>機關：<b>${eAgency(e) ? escapeHtml(eAgency(e)) : "—"}</b></span>
         <span>科室：<b>${eDept(e) ? escapeHtml(eDept(e)) : "—"}</b></span>
+        <span>職稱：<b>${eTitle(e) ? escapeHtml(eTitle(e)) : "—"}</b></span>
         <span>LINE ID：<b>${eLineId(e) ? escapeHtml(eLineId(e)) : "—"}</b></span>
-        <span>Email：<b>${eEmail(e) ? escapeHtml(eEmail(e)) : "—"}</b></span>
-        <span>電話：<b>${ePhone(e) ? escapeHtml(ePhone(e)) : "—"}</b></span>
         <span>登錄日期：<b>${formatDate(e.log_date)}</b></span>
         <span class="${deadlineClass}">Deadline：<b>${formatDate(e.deadline)}${deadlineSuffix}</b></span>
       </div>
@@ -878,6 +878,10 @@
         </div>
         <div class="form-row">
           <div>
+            <label>職稱</label>
+            <input type="text" id="cTitle" placeholder="職稱">
+          </div>
+          <div>
             <label>LINE ID</label>
             <input type="text" id="cLineId" placeholder="LINE ID">
           </div>
@@ -924,6 +928,7 @@
       <div class="client-meta">
         <span>機關：<b>${c.agency ? escapeHtml(c.agency) : "—"}</b></span>
         <span>科室：<b>${c.department ? escapeHtml(c.department) : "—"}</b></span>
+        <span>職稱：<b>${c.title ? escapeHtml(c.title) : "—"}</b></span>
         <span>LINE ID：<b>${c.line_id ? escapeHtml(c.line_id) : "—"}</b></span>
         <span>Email：<b>${c.email ? escapeHtml(c.email) : "—"}</b></span>
         <span>電話：<b>${c.phone ? escapeHtml(c.phone) : "—"}</b></span>
@@ -959,6 +964,7 @@
       document.getElementById("cName").value = client.name;
       document.getElementById("cAgency").value = client.agency || "";
       document.getElementById("cDept").value = client.department || "";
+      document.getElementById("cTitle").value = client.title || "";
       document.getElementById("cLineId").value = client.line_id || "";
       document.getElementById("cEmail").value = client.email || "";
       document.getElementById("cPhone").value = client.phone || "";
@@ -988,6 +994,7 @@
       name,
       agency: document.getElementById("cAgency").value.trim() || null,
       department: document.getElementById("cDept").value.trim() || null,
+      title: document.getElementById("cTitle").value.trim() || null,
       line_id: document.getElementById("cLineId").value.trim() || null,
       email: document.getElementById("cEmail").value.trim() || null,
       phone: document.getElementById("cPhone").value.trim() || null,
