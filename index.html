@@ -231,6 +231,8 @@
   let sortBy = "deadline";  // deadline | created | name | agency | dept
   let editingEntryId = null;
   let editingClientId = null;
+  let clientFilterAgency = "all";
+  let clientSearchQuery = "";
   let loaded = false;
   let formOpen = false; // true while add/edit form (entry or client) is open, to avoid auto-refresh wiping unsaved input
 
@@ -425,6 +427,21 @@
   }
   function resetFilters() {
     filterStatus = "all"; filterName = "all"; filterAgency = "all"; filterDept = "all"; searchQuery = "";
+  }
+  function resetClientFilters() {
+    clientFilterAgency = "all"; clientSearchQuery = "";
+  }
+  function filterClients(list) {
+    let out = list;
+    if (clientFilterAgency !== "all") out = out.filter(c => (c.agency || "").trim() === clientFilterAgency);
+    const q = clientSearchQuery.trim().toLowerCase();
+    if (q) {
+      out = out.filter(c => {
+        const hay = [c.name, c.agency, c.department, c.title, c.line_id, c.email, c.phone].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    return out;
   }
 
   // ---- Rendering ----
@@ -665,6 +682,8 @@
       </div>
       <div id="pageMeta">共 ${all.length} 筆記錄・${totalPending} 筆待處理（跨 ${projects.length} 個專案）${totalOverdue ? `・<span class="overdue-count">${totalOverdue} 筆已逾期</span>` : ""}</div>
 
+      ${entryFormHtml()}
+
       ${toolbarHtml(all)}
 
       ${overdueList.length ? `
@@ -683,6 +702,7 @@
       downloadCSV(toCSV(combinedForExport, true), `專案備忘錄_總覽.csv`);
     });
     document.getElementById("refreshBtn").addEventListener("click", loadAll);
+    bindEntryForm();
     bindToolbar();
 
     if (overdueList.length) {
@@ -863,6 +883,18 @@
       </div>
       <div id="pageMeta">共 ${clients.length} 位客戶</div>
 
+      <div id="toolBar">
+        <input type="text" id="clientSearchInput" placeholder="搜尋姓名／機關／科室／職稱／LINE ID／Email／電話…">
+        <div id="advFilterRow">
+          <div class="field">機關：
+            <select id="clientAgencyFilterSelect">
+              <option value="all">全部</option>
+              ${distinctValues(clients, c => c.agency).map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+      </div>
+
       <button class="btn" id="toggleClientFormBtn" style="margin-bottom:14px;">＋ 新增客戶</button>
 
       <form id="clientForm">
@@ -912,12 +944,33 @@
     document.getElementById("cancelClientFormBtn").addEventListener("click", closeClientForm);
     document.getElementById("clientForm").addEventListener("submit", onSubmitClient);
 
+    const search = document.getElementById("clientSearchInput");
+    search.value = clientSearchQuery;
+    search.addEventListener("input", (e) => {
+      clientSearchQuery = e.target.value;
+      const cursorPos = e.target.selectionStart;
+      render();
+      const freshSearch = document.getElementById("clientSearchInput");
+      if (freshSearch) {
+        freshSearch.focus();
+        freshSearch.setSelectionRange(cursorPos, cursorPos);
+      }
+    });
+    const agencySel = document.getElementById("clientAgencyFilterSelect");
+    agencySel.value = clientFilterAgency;
+    agencySel.addEventListener("change", (e) => { clientFilterAgency = e.target.value; render(); });
+
     const list = document.getElementById("clientList");
     if (!clients.length) {
       list.innerHTML = `<div class="empty-state">還沒有客戶資料，點上方「＋ 新增客戶」建立第一筆</div>`;
       return;
     }
-    const sorted = [...clients].sort((a, b) => cmpText(a.name, b.name));
+    const filtered = filterClients(clients);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty-state">沒有符合條件的客戶</div>`;
+      return;
+    }
+    const sorted = [...filtered].sort((a, b) => cmpText(a.name, b.name));
     sorted.forEach(c => list.appendChild(renderClientCard(c)));
   }
 
@@ -1029,6 +1082,7 @@
   document.getElementById("clientsItem").addEventListener("click", () => {
     activeView = "clients";
     editingClientId = null;
+    resetClientFilters();
     render();
   });
   document.getElementById("addProjectBtn").addEventListener("click", addProject);
