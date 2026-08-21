@@ -284,6 +284,30 @@
     return d.innerHTML;
   }
 
+  // Wire a search <input> so it plays nicely with IME composition (Zhuyin/Pinyin/etc).
+  // While the IME candidate window is open, browsers still fire "input" events with the
+  // in-progress phonetic text (e.g. "ㄏㄨㄤˊ") — re-rendering on those events destroys the
+  // input element mid-composition and breaks the conversion to the final character (e.g. "黃").
+  // So we only apply the search + re-render once composition actually finishes.
+  function wireSearchInput(id, applyValue) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let composing = false;
+    function commit(e) {
+      const cursorPos = e.target.selectionStart;
+      applyValue(e.target.value);
+      render();
+      const fresh = document.getElementById(id);
+      if (fresh) {
+        fresh.focus();
+        fresh.setSelectionRange(cursorPos, cursorPos);
+      }
+    }
+    el.addEventListener("compositionstart", () => { composing = true; });
+    el.addEventListener("compositionend", (e) => { composing = false; commit(e); });
+    el.addEventListener("input", (e) => { if (!composing) commit(e); });
+  }
+
   // ---- Client helpers ----
   function getClient(id) { return clients.find(c => c.id === id) || null; }
   function eName(e) { return e._client ? (e._client.name || "") : ""; }
@@ -517,16 +541,7 @@
     });
     const search = document.getElementById("searchInput");
     search.value = searchQuery;
-    search.addEventListener("input", (e) => {
-      searchQuery = e.target.value;
-      const cursorPos = e.target.selectionStart;
-      render();
-      const freshSearch = document.getElementById("searchInput");
-      if (freshSearch) {
-        freshSearch.focus();
-        freshSearch.setSelectionRange(cursorPos, cursorPos);
-      }
-    });
+    wireSearchInput("searchInput", (v) => { searchQuery = v; });
     const sortSel = document.getElementById("sortSelect");
     sortSel.value = sortBy;
     sortSel.addEventListener("change", (e) => { sortBy = e.target.value; render(); });
@@ -946,16 +961,7 @@
 
     const search = document.getElementById("clientSearchInput");
     search.value = clientSearchQuery;
-    search.addEventListener("input", (e) => {
-      clientSearchQuery = e.target.value;
-      const cursorPos = e.target.selectionStart;
-      render();
-      const freshSearch = document.getElementById("clientSearchInput");
-      if (freshSearch) {
-        freshSearch.focus();
-        freshSearch.setSelectionRange(cursorPos, cursorPos);
-      }
-    });
+    wireSearchInput("clientSearchInput", (v) => { clientSearchQuery = v; });
     const agencySel = document.getElementById("clientAgencyFilterSelect");
     agencySel.value = clientFilterAgency;
     agencySel.addEventListener("change", (e) => { clientFilterAgency = e.target.value; render(); });
